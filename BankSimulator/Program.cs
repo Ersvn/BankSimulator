@@ -1,30 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace BankSimulator
 {
     public class Program
     {
-        private static BankAccount bankAccount;
-        private static Security secureIt;
+        private static BankAccount bankAccount = new BankAccount(1000);
+        private static Security secureIt = new Security();
         private static List<Client> clients = new List<Client>();
+        private const int WaitTimeInMilliseconds = 5000;
 
         static void Main(string[] args)
         {
-            bankAccount = new BankAccount(1000); // initialize bank account with start balance
-
             int numClients = 10; // sets the amount of clients
 
             // create and start the client threads
-            for (int i = 0; i < numClients; i++)
-            {
-                Client client = new Client(bankAccount, i);
-                clients.Add(client);
-                Thread thread = new Thread(client.Run);
-                thread.Start();
-            }
-
-            StartClients();
+            StartClient(numClients);
             Wait();
             StopClients();
             GatherResults();
@@ -32,11 +24,12 @@ namespace BankSimulator
             Console.ReadKey();
         }
 
-        private static void StartClients()
+        private static void StartClient(int numClients)
         {
-            // start the client threads
-            foreach (Client client in clients)
+            for (int i = 0; i < numClients; i++)
             {
+                Client client = new Client(bankAccount, i);
+                clients.Add(client);
                 Thread thread = new Thread(client.Run);
                 thread.Start();
             }
@@ -44,9 +37,7 @@ namespace BankSimulator
 
         private static void Wait()
         {
-            // wait 5 sec
-
-            Thread.Sleep(5000);
+            Thread.Sleep(WaitTimeInMilliseconds);
         }
 
         private static void StopClients()
@@ -57,10 +48,10 @@ namespace BankSimulator
                 client.Stop();
             }
         }
-
         private static void GatherResults()
         {
             // gathers the result
+            
             double totalAmountTransactioned = 0;
             int totalNumberOfTransactions = 0;
             int totalNumberOfErrors = 0;
@@ -68,17 +59,16 @@ namespace BankSimulator
             foreach (Client client in clients)
             {
                 totalAmountTransactioned += client.GetTotalAmountTransactioned();
-                totalNumberOfTransactions += bankAccount.GetNumberOfTransactions();
+                Interlocked.Add(ref totalNumberOfTransactions, bankAccount.GetNumberOfTransactions());
                 if (secureIt != null)
                 {
-                    totalNumberOfErrors += secureIt.GetNumberOfErrors();
+                    Interlocked.Add(ref totalNumberOfErrors, secureIt.GetNumberOfErrors());
                 }
             }
             #region Transaction information
-            Console.WriteLine(" ");
-            Console.WriteLine("Number of transactions: " + totalNumberOfTransactions);
+            Console.WriteLine("\n\n"+ "Number of transactions: " + totalNumberOfTransactions);
             Console.WriteLine("Number of errors: " + totalNumberOfErrors);
-            Console.WriteLine("All transactions of Clients sums into: " + totalAmountTransactioned + ", balance on account " + bankAccount.GetBalance());
+            Console.WriteLine("All transactions of Clients sums into: " + totalAmountTransactioned + ", balance on account " + bankAccount.GetBalance() + "\n");
             Console.ReadLine();
             #endregion
         }

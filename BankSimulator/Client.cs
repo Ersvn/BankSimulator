@@ -13,8 +13,8 @@ namespace BankSimulator
         private readonly int id;
         private readonly BankAccount account;
         private double totalAmountTransacted;
-        private readonly Random random;
-        private bool _stop;
+        private static Random random = new Random();
+        private bool requestStop;
         private int numberOfTransactions;
 
         public Client(BankAccount _account, int _id)
@@ -23,13 +23,14 @@ namespace BankSimulator
             id = _id;
             totalAmountTransacted = 0;
             numberOfTransactions = 0;
+            
         }
 
         public void Run()
         {
-            Random random = new Random();
+            
 
-            while (!_stop)
+            while (!requestStop)
             {
                 bool deposit = random.Next(2) == 0;
                 double amount = random.NextDouble() * 1000;
@@ -63,7 +64,7 @@ namespace BankSimulator
 
         public void Stop()
         {
-            _stop = true;
+            requestStop = true;
         }
 
         public BankAccount GetBankAccount()

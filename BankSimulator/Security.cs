@@ -1,41 +1,37 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace BankSimulator
 {
     public class Security
     {
-        private readonly List<Stamp> Stamps;
-        public int NumberOfErrors;
+        private List<Stamp> transactionStamps;
+        private int NumberOfErrors;
 
         public Security()
         {
-            Stamps = new List<Stamp>();
+            transactionStamps = new List<Stamp>();
             NumberOfErrors = 0;
         }
 
-        public void MakePreTransactionStamp(double balance, int clientId)
+        public void AddPreTransactionStamp(double balance, int clientId)
         {
-            Stamps.Add(new Stamp(balance, clientId, StampType.PreTransaction));
+            transactionStamps.Add(new Stamp(balance, clientId, StampType.PreTransaction));
         }
 
-        public void MakePostTransactionStamp(double balance, int clientId)
+        public void AddPostTransactionStamp(double balance, int clientId)
         {
-            Stamps.Add(new Stamp(balance, clientId, StampType.PostTransaction));
+            transactionStamps.Add(new Stamp(balance, clientId, StampType.PostTransaction));
         }
 
         public bool VerifyLastTransaction(double amount)
         {
-            if (Stamps.Count < 2)
+            if (transactionStamps.Count < 2)
             {
                 return false;
             }
 
-            Stamp lastStamp = Stamps[Stamps.Count - 1];
-            Stamp previousStamp = Stamps[Stamps.Count - 2];
+            var lastStamp = transactionStamps[transactionStamps.Count - 1];
+            var previousStamp = transactionStamps[transactionStamps.Count - 2];
 
             if (lastStamp.Type != StampType.PostTransaction || previousStamp.Type != StampType.PreTransaction)
             {

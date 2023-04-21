@@ -18,7 +18,7 @@ namespace BankSimulator
         {
             balance = _balance;
             numberOfTransactions = 0;
-            //numberOfErrors = 0;
+            numberOfErrors = 0;
             security = new Security();
         }
 
@@ -51,10 +51,10 @@ namespace BankSimulator
 
         public void Transaction(double amount, int clientId)
         {
-            security.MakePreTransactionStamp(balance, clientId);
+            security.AddPreTransactionStamp(balance, clientId);
             balance = balance + amount;
             numberOfTransactions++;
-            security.MakePostTransactionStamp(balance, clientId);
+            security.AddPostTransactionStamp(balance, clientId);
             if (!security.VerifyLastTransaction(amount))
             {
                 numberOfErrors++;
