@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,48 +12,73 @@ namespace BankSimulator
     {
         private readonly int id;
         private readonly BankAccount account;
+        private double totalAmountTransacted;
         private readonly Random random;
-        private bool operating;
-        private double totalAmountTransactioned;
+        private bool _stop;
+        private int numberOfTransactions;
 
-        public Client(int id, BankAccount account)
+        public Client(BankAccount _account, int _id)
         {
-            this.id = id;
-            this.account = account;
-            this.random = new Random();
-            this.operating = true;
-            this.totalAmountTransactioned = 0;
+            account = _account;
+            id = _id;
+            totalAmountTransacted = 0;
+            numberOfTransactions = 0;
         }
 
         public void Run()
         {
-            while (operating)
+            Random random = new Random();
+
+            while (!_stop)
             {
-                bool deposit = random.NextDouble() < 0.5;
-                double amount = random.Next(1, 101);
-                if (deposit)
+                bool deposit = random.Next(2) == 0;
+                double amount = random.NextDouble() * 1000;
+
+                lock (account) // lock the bank account to ensure mutual exclusion
                 {
-                    account.Deposit(amount);
-                    totalAmountTransactioned += amount;
+                    if (deposit)
+                    {
+                        account.Deposit(amount);
+                        totalAmountTransacted += amount;
+                        Console.WriteLine($"Client {id}: deposited {amount:C2}, balance is {account.GetBalance():C2}");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            account.Withdraw(amount);
+                            totalAmountTransacted -= amount;
+                            Console.WriteLine($"Client {id}: withdrew {amount:C2}, balance is {account.GetBalance():C2}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Client {id}: withdrawal failed ({ex.Message}), balance is {account.GetBalance():C2}");
+                        }
+                    }
                 }
-                else
-                {
-                    account.Withdraw(amount);
-                    totalAmountTransactioned -= amount;
-                }
-                Thread.Sleep(100);
+
+                Thread.Sleep(random.Next(1000));
             }
         }
 
         public void Stop()
         {
-            operating = false;
+            _stop = true;
+        }
+
+        public BankAccount GetBankAccount()
+        {
+            return account;
         }
 
         public double GetTotalAmountTransactioned()
         {
-            return totalAmountTransactioned;
+            return totalAmountTransacted;
         }
 
+        public int GetNumberOfTransactions()
+        {
+            return numberOfTransactions;
+        }
     }
 }

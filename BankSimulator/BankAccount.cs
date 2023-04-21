@@ -10,26 +10,55 @@ namespace BankSimulator
     {
         private double balance;
         private int numberOfTransactions;
-        private Security security;
-        private readonly object balanceLock = new object();
+        private int numberOfErrors;
+        private readonly Security security;
+        private static object balanceLock = new object();
 
-        public BankAccount(double initialBalance)
+        public BankAccount(double _balance)
         {
-            balance = initialBalance;
+            balance = _balance;
             numberOfTransactions = 0;
+            //numberOfErrors = 0;
             security = new Security();
         }
 
-        public void Transaction(decimal amount, int clientId)
+        public void Withdraw(double amount)
         {
-            
+            lock (balanceLock)
+            {
+                if (amount > balance)
+                {
+                    throw new Exception("Insufficient funds");
+                }
+                balance -= amount;
+                numberOfTransactions++;
+            }
         }
 
-
+        public void Deposit(double amount)
+        {
+            lock (balanceLock)
+            {
+                balance += amount;
+                numberOfTransactions++;
+            }
+        }
 
         public double GetBalance()
         {
             return balance;
+        }
+
+        public void Transaction(double amount, int clientId)
+        {
+            security.MakePreTransactionStamp(balance, clientId);
+            balance = balance + amount;
+            numberOfTransactions++;
+            security.MakePostTransactionStamp(balance, clientId);
+            if (!security.VerifyLastTransaction(amount))
+            {
+                numberOfErrors++;
+            }
         }
 
         public int GetNumberOfTransactions()
@@ -37,34 +66,9 @@ namespace BankSimulator
             return numberOfTransactions;
         }
 
-        
-
-        public void Deposit(double amount)
+        public int GetNumberOfErrors()
         {
-            lock (balanceLock)
-            {
-                double prevBalance = balance;
-                balance += amount;
-                double newBalance = balance;
-                //security.CheckTransaction(prevBalance, newBalance, "Deposit");
-            }
-        }
-
-        public void Withdraw(double amount)
-        {
-            lock (balanceLock)
-            {
-                double prevBalance = balance;
-                balance -= amount;
-                double newBalance = balance;
-                //security.CheckTransaction(prevBalance, newBalance, "Withdrawal");
-            }
-        }
-
-        public void PrintTransactionErrors()
-        {
-            security.PrintErrors();
+            return numberOfErrors;
         }
     }
-
 }

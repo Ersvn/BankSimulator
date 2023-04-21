@@ -8,57 +8,60 @@ namespace BankSimulator
 {
     public class Security
     {
-        private decimal prevBalance;
-        private decimal newBalance;
-        private int numErrors;
-        private readonly object securityLock = new object();
-        private double preTransactionBalance;
-        private double postTransactionBalance;
-        private int clientId;
-        private TransactionType transactionType;
-        private int numberOfIncorrectTransactions = 0;
+        private readonly List<Stamp> Stamps;
+        public int NumberOfErrors;
+
+        public Security()
+        {
+            Stamps = new List<Stamp>();
+            NumberOfErrors = 0;
+        }
 
         public void MakePreTransactionStamp(double balance, int clientId)
         {
-            this.preTransactionBalance = balance;
-            this.clientId = clientId;
-            this.transactionType = TransactionType.Deposit; // assuming deposit by default
+            Stamps.Add(new Stamp(balance, clientId, StampType.PreTransaction));
         }
+
         public void MakePostTransactionStamp(double balance, int clientId)
         {
-            this.postTransactionBalance = balance;
-            if (preTransactionBalance != postTransactionBalance)
-            {
-                numberOfIncorrectTransactions++;
-            }
-        }
-        
-
-        public void CheckTransaction(decimal prevBalance, decimal newBalance, string transactionType)
-        {
-            lock (securityLock)
-            {
-                this.prevBalance = prevBalance;
-                this.newBalance = newBalance;
-                this.transactionType = transactionType;
-                if (prevBalance + newBalance != prevBalance * 2)
-                {
-                    numErrors++;
-                }
-            }
+            Stamps.Add(new Stamp(balance, clientId, StampType.PostTransaction));
         }
 
-        public void PrintErrors()
+        public bool VerifyLastTransaction(double amount)
         {
-            lock (securityLock)
+            if (Stamps.Count < 2)
             {
-                Console.WriteLine("Number of transaction errors: " + numErrors);
+                return false;
             }
+
+            Stamp lastStamp = Stamps[Stamps.Count - 1];
+            Stamp previousStamp = Stamps[Stamps.Count - 2];
+
+            if (lastStamp.Type != StampType.PostTransaction || previousStamp.Type != StampType.PreTransaction)
+            {
+                return false;
+            }
+
+            if (lastStamp.ClientId != previousStamp.ClientId)
+            {
+                return false;
+            }
+
+            double balanceChange = lastStamp.Balance - previousStamp.Balance;
+
+            if (balanceChange != amount)
+            {
+                NumberOfErrors++;
+                return false;
+            }
+
+            return true;
         }
-    }
-    public enum TransactionType
-    {
-        Deposit,
-        Withdrawal
+
+        public int GetNumberOfErrors()
+        {
+            return NumberOfErrors;
+        }
     }
 }
+
